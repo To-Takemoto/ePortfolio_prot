@@ -12,3 +12,6 @@ wheels/
 
 #uv
 uv.lock
+
+#data
+*.db
