@@ -3,6 +3,8 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import os
+from enum import Enum
+import json
 
 from models import User
 from db_client import DBHandler
@@ -29,7 +31,8 @@ def load_user(user_id):
 @app.route("/")
 @login_required
 def index():
-    return f"Hello, {current_user.username}! You are logged in."
+    # ログイン後はユーザーのマイページにリダイレクト
+    return redirect(url_for("mypage"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -42,7 +45,7 @@ def login():
         if user_data and check_password_hash(user_data[0]["password"], password):
             user = User(user_data[0]["id"], user_data[0]["username"], user_data[0]["password"])
             login_user(user)
-            return redirect(url_for("index"))
+            return redirect(url_for("mypage"))  # ログイン後にマイページにリダイレクト
         else:
             flash("Invalid username or password", "danger")
             return redirect(url_for("login"))
@@ -55,6 +58,22 @@ def logout():
     logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
+
+# マイページエンドポイント
+@app.route("/mypage")
+@login_required
+def mypage():
+    # 現在のユーザーのポートフォリオを取得
+    portfolios = db.select("portfolios", fields="id, title, type, content", conditions={"user_id": current_user.id})
+    for portfolio in portfolios:
+        try:
+            portfolio_type = PortfolioType(portfolio["type"])
+            portfolio["type_label"] = portfolio_type.label
+        except ValueError:
+            portfolio["type_label"] = "未知の種類"
+    # マイページテンプレートに渡す
+    return render_template("mypage.html", user=current_user, portfolios=portfolios)
+
 
 # ここから追加: ユーザー登録用のエンドポイント
 @app.route("/register", methods=["GET", "POST"])
@@ -75,6 +94,86 @@ def register():
         return redirect(url_for("login"))
 
     return render_template("register.html")
+
+# ポートフォリオ編集ページ
+@app.route("/portfolio/edit", methods=["GET", "POST"])
+@login_required
+def portfolio_edit():
+    if request.method == "POST":
+        portfolio_id = request.form["portfolio_id"]
+        new_title = request.form["title"]
+        new_description = request.form["description"]
+
+        # ポートフォリオの更新処理
+        db.update_data("portfolios", updates={"title": new_title, "description": new_description}, conditions={"id": portfolio_id, "user_id": current_user.id})
+        flash("ポートフォリオが更新されました", "success")
+        return redirect(url_for("mypage"))
+
+    return render_template("portfolio_edit.html")
+
+
+# ポートフォリオの種類を定義
+class PortfolioType(Enum):
+    SKILLSET = 'skillset'
+    PROJECT = 'project'
+    # 他の種類も同様に追加
+
+    @property
+    def label(self):
+        labels = {
+            'skillset': 'スキルセット',
+            'project': 'プロジェクト・制作物',
+            # 他の種類のラベルも追加
+        }
+        return labels[self.value]
+
+# ポートフォリオ投稿ページ
+@app.route("/portfolio/create", methods=["GET", "POST"])
+@login_required
+def portfolio_create():
+    if request.method == "POST":
+        portfolio_type = request.form["portfolio_type"]
+        title = request.form["title"]
+        data = {
+            "title": title,
+            "type": portfolio_type,
+            "user_id": current_user.id
+        }
+
+        # 種類ごとにデータを収集
+        if portfolio_type == 'skillset':
+            data["content"] = {
+                "technical_skills": request.form.get("technical_skills"),
+                "soft_skills": request.form.get("soft_skills"),
+                "certifications": request.form.get("certifications")
+            }
+        elif portfolio_type == 'project':
+            data["content"] = {
+                "project_name": request.form.get("project_name"),
+                "duration": request.form.get("duration"),
+                "overview": request.form.get("overview"),
+                "deliverables": request.form.get("deliverables"),
+                "feedback": request.form.get("feedback")
+            }
+        # 他の種類も同様に処理
+
+        # JSON形式で保存
+        import json
+        data["content"] = json.dumps(data["content"], ensure_ascii=False)
+
+        # データベースに保存
+        db.insert_data("portfolios", data)
+        flash("ポートフォリオが投稿されました", "success")
+        return redirect(url_for("mypage"))
+
+    # テンプレートに種類を渡す
+    portfolio_types = list(PortfolioType)
+    return render_template("portfolio_create.html", portfolio_types=portfolio_types)
+
+# カスタムフィルターを追加
+@app.template_filter('from_json')
+def from_json_filter(s):
+    return json.loads(s)
 
 if __name__ == "__main__":
     if not db.table_exists("users"):

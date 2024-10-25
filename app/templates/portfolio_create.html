@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポートフォリオ投稿</title>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="page-header"><h1>ポートフォリオ投稿</h1></div>
+
+    <!-- Flashメッセージの表示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('portfolio_create') }}" method="POST" id="portfolioForm">
+        <div class="form-group">
+            <label for="portfolio_type">ポートフォリオの種類</label><br>
+            {% for type in portfolio_types %}
+                <label class="radio-inline">
+                    <input type="radio" name="portfolio_type" value="{{ type.value }}" required {% if loop.first %}checked{% endif %}> {{ type.label }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <!-- 共通フィールド -->
+        <div class="form-group">
+            <label for="title">タイトル</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+
+        <!-- スキルセット用のフィールド -->
+        <div id="skillsetFields" class="type-fields" style="display:none;">
+            <div class="form-group">
+                <label for="technical_skills">技術的なスキル</label>
+                <input type="text" class="form-control" id="technical_skills" name="technical_skills">
+            </div>
+            <div class="form-group">
+                <label for="soft_skills">ソフトスキル</label>
+                <input type="text" class="form-control" id="soft_skills" name="soft_skills">
+            </div>
+            <div class="form-group">
+                <label for="certifications">資格や認定</label>
+                <input type="text" class="form-control" id="certifications" name="certifications">
+            </div>
+        </div>
+
+        <!-- プロジェクト・制作物用のフィールド -->
+        <div id="projectFields" class="type-fields" style="display:none;">
+            <div class="form-group">
+                <label for="project_name">プロジェクト名</label>
+                <input type="text" class="form-control" id="project_name" name="project_name">
+            </div>
+            <div class="form-group">
+                <label for="duration">実施時期</label>
+                <input type="text" class="form-control" id="duration" name="duration">
+            </div>
+            <div class="form-group">
+                <label for="overview">プロジェクト概要</label>
+                <textarea class="form-control" id="overview" name="overview"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="deliverables">成果物の詳細</label>
+                <textarea class="form-control" id="deliverables" name="deliverables"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="feedback">評価やフィードバック</label>
+                <textarea class="form-control" id="feedback" name="feedback"></textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">投稿</button>
+    </form>
+</div>
+
+<script>
+    // 種類に応じてフィールドを表示/非表示にするスクリプト
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeRadios = document.getElementsByName('portfolio_type');
+        const typeFields = document.querySelectorAll('.type-fields');
+
+        function updateFields() {
+            const selectedRadio = document.querySelector('input[name="portfolio_type"]:checked');
+            typeFields.forEach(field => field.style.display = 'none');
+            if (selectedRadio) {
+                const selectedType = selectedRadio.value;
+                if (selectedType === 'skillset') {
+                    document.getElementById('skillsetFields').style.display = 'block';
+                } else if (selectedType === 'project') {
+                    document.getElementById('projectFields').style.display = 'block';
+                }
+                // 他の種類も同様に処理
+            }
+        }
+
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', updateFields);
+        });
+
+        // ページロード時にフィールドを初期化
+        updateFields();
+    });
+</script>
+</body>
+</html>
