@@ -29,5 +29,18 @@ def initialize_db():
         else:
             print(f"User {user['username']} already exists in the database.")
 
+    # ポートフォリオテーブル
+    if not db.table_exists("portfolios"):
+        db.execute_query("""
+        CREATE TABLE portfolios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """)
+        print("Table 'portfolios' created successfully.")
+
 if __name__ == "__main__":
     initialize_db()
