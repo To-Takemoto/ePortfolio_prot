@@ -35,12 +35,20 @@ def initialize_db():
         CREATE TABLE portfolios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
+            type TEXT NOT NULL,
             title TEXT NOT NULL,
-            description TEXT NOT NULL,
+            content TEXT NOT NULL,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """)
         print("Table 'portfolios' created successfully.")
+    else:
+        # 既存のテーブルにカラムを追加する場合
+        columns = db.get_metadata("portfolios", info_type="columns")
+        if 'type' not in columns:
+            db.execute_query("ALTER TABLE portfolios ADD COLUMN type TEXT NOT NULL DEFAULT ''")
+        if 'content' not in columns:
+            db.execute_query("ALTER TABLE portfolios ADD COLUMN content TEXT NOT NULL DEFAULT ''")
 
 if __name__ == "__main__":
     initialize_db()
