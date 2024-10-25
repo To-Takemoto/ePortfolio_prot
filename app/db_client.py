@@ -1,14 +1,20 @@
 import sqlite3
 from contextlib import contextmanager
 
+
+
 class DBHandler:
     def __init__(self, db_path: str):
         self._db_path = db_path
 
+    @staticmethod
+    def dict_factory(cursor, row):
+        return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
+
     @contextmanager
     def get_connection(self):
         conn = sqlite3.connect(self._db_path)
-        conn.row_factory = sqlite3.Row
+        conn.row_factory = self.dict_factory  # ここを変更
         cursor = conn.cursor()
         try:
             yield conn, cursor
