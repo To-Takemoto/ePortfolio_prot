@@ -4,22 +4,28 @@ from werkzeug.security import generate_password_hash
 def initialize_db():
     db = DBHandler("example.db")
 
+    # ユーザーテーブルの作成または更新
     if not db.table_exists("users"):
         db.execute_query("""
         CREATE TABLE users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            role TEXT NOT NULL
         )
         """)
         print("Table 'users' created successfully.")
     else:
-        print("Table 'users' already exists.")
+        # 'role' カラムが存在しない場合は追加
+        columns = db.get_metadata("users", info_type="columns")
+        if 'role' not in columns:
+            db.execute_query("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'")
+            print("Added 'role' column to 'users' table.")
 
-    # デフォルトのユーザーをハッシュ化して挿入
+    # デフォルトのユーザーを挿入
     default_users = [
-        {"username": "admin", "password": generate_password_hash("password")},
-        {"username": "user", "password": generate_password_hash("password123")}
+        {"username": "admin", "password": generate_password_hash("password"), "role": "teacher"},
+        {"username": "user", "password": generate_password_hash("password123"), "role": "student"}
     ]
 
     for user in default_users:
@@ -49,6 +55,24 @@ def initialize_db():
             db.execute_query("ALTER TABLE portfolios ADD COLUMN type TEXT NOT NULL DEFAULT ''")
         if 'content' not in columns:
             db.execute_query("ALTER TABLE portfolios ADD COLUMN content TEXT NOT NULL DEFAULT ''")
+
+    # フィードバックテーブルの作成
+    if not db.table_exists("feedbacks"):
+        db.execute_query("""
+        CREATE TABLE feedbacks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            teacher_id INTEGER NOT NULL,
+            student_id INTEGER NOT NULL,
+            portfolio_id INTEGER NOT NULL,
+            feedback TEXT NOT NULL,
+            FOREIGN KEY(teacher_id) REFERENCES users(id),
+            FOREIGN KEY(student_id) REFERENCES users(id),
+            FOREIGN KEY(portfolio_id) REFERENCES portfolios(id)
+        )
+        """)
+        print("Table 'feedbacks' created successfully.")
+    else:
+        print("Table 'feedbacks' already exists.")
 
 if __name__ == "__main__":
     initialize_db()

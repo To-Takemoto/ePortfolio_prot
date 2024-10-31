@@ -1,36 +1,30 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
+<!-- templates/register.html -->
 
-<div class="container">
-    <div class="page-header"><h1>Register</h1></div>
+{% extends "base.html" %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+{% block title %}新規登録{% endblock %}
 
-    <form action="{{ url_for('register') }}" method="POST">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Register</button>
-    </form>
-</div>
+{% block content %}
+<div class="page-header"><h1>新規登録</h1></div>
 
-</body>
-</html>
+<form action="{{ url_for('register') }}" method="POST">
+    <div class="form-group">
+        <label for="username">ユーザー名</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    <div class="form-group">
+        <label for="password">パスワード</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <div class="form-group">
+        <label for="role">ユーザーの種類を選択してください</label>
+        <select class="form-control" id="role" name="role">
+            <option value="student">生徒</option>
+            <option value="teacher">先生</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">登録</button>
+</form>
+
+<p>すでにアカウントをお持ちですか？ <a href="{{ url_for('login') }}">こちらからログイン</a>.</p>
+{% endblock %}

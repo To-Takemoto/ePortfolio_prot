@@ -1,72 +1,57 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Page</title>
-    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-<div class="container-fluid">
-    <div class="row">
-        <!-- 左側のメニューバー -->
-        <div class="col-md-3">
-            <ul class="nav nav-pills nav-stacked">
-                <li><a href="{{ url_for('portfolio_create') }}">ポートフォリオ投稿</a></li>
-                <li><a href="{{ url_for('portfolio_edit') }}">ポートフォリオ編集</a></li>
-            </ul>
-        </div>
+<!-- templates/mypage.html -->
 
-        <!-- 右側のコンテンツ -->
-        <div class="col-md-9">
-            <div class="page-header"><h1>Welcome to your My Page, {{ user.username }}!</h1></div>
-            
-            <!-- Flash メッセージの表示 -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            
-            <p><strong>Username:</strong> {{ user.username }}</p>
-            <p><strong>User ID:</strong> {{ user.id }}</p>
+{% extends "base.html" %}
 
-            <!-- 投稿済みポートフォリオの一覧表示 -->
-            <!-- ポートフォリオの一覧表示部分 -->
-            <h3>あなたのポートフォリオ一覧</h3>
-            {% if portfolios %}
-                <ul class="list-group">
-                    {% for portfolio in portfolios %}
-                        <li class="list-group-item">
-                            <h4>{{ portfolio.title }} ({{ portfolio.type_label }})</h4>
-                            {% if portfolio.content %}
-                                {% set content = portfolio.content | from_json %}
-                                <!-- 種類に応じて表示を変える -->
-                                {% if portfolio.type == 'skillset' %}
-                                    <p><strong>技術的なスキル:</strong> {{ content.technical_skills }}</p>
-                                    <p><strong>ソフトスキル:</strong> {{ content.soft_skills }}</p>
-                                    <p><strong>資格や認定:</strong> {{ content.certifications }}</p>
-                                {% elif portfolio.type == 'project' %}
-                                    <p><strong>プロジェクト名:</strong> {{ content.project_name }}</p>
-                                    <p><strong>実施時期:</strong> {{ content.duration }}</p>
-                                    <p><strong>概要:</strong> {{ content.overview }}</p>
-                                    <p><strong>成果物:</strong> {{ content.deliverables }}</p>
-                                    <p><strong>フィードバック:</strong> {{ content.feedback }}</p>
-                                {% endif %}
-                            {% endif %}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>まだポートフォリオが投稿されていません。</p>
-            {% endif %}
+{% block title %}マイページ{% endblock %}
 
-            
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
-        </div>
-    </div>
-</div>
-</body>
-</html>
+{% block content %}
+<div class="page-header"><h1>ようこそ、{{ user.username }} さん！</h1></div>
+
+<!-- 生徒用のアクションリンク -->
+{% if user.role == 'student' %}
+    <a href="{{ url_for('portfolio_create') }}" class="btn btn-success">ポートフォリオ作成</a>
+    <a href="{{ url_for('portfolio_edit') }}" class="btn btn-primary">ポートフォリオ編集</a>
+{% endif %}
+
+<!-- 投稿済みポートフォリオの一覧表示 -->
+<h3>あなたのポートフォリオ一覧</h3>
+{% if portfolios %}
+    <ul class="list-group">
+        {% for portfolio in portfolios %}
+            <li class="list-group-item">
+                <h4>{{ portfolio.title }} ({{ portfolio.type_label }})</h4>
+                {% if portfolio.content %}
+                    {% set content = portfolio.content | from_json %}
+                    <!-- 種類に応じて表示を変える -->
+                    {% if portfolio.type == 'skillset' %}
+                        <p><strong>技術的なスキル:</strong> {{ content.technical_skills }}</p>
+                        <p><strong>ソフトスキル:</strong> {{ content.soft_skills }}</p>
+                        <p><strong>資格や認定:</strong> {{ content.certifications }}</p>
+                    {% elif portfolio.type == 'project' %}
+                        <p><strong>プロジェクト名:</strong> {{ content.project_name }}</p>
+                        <p><strong>実施時期:</strong> {{ content.duration }}</p>
+                        <p><strong>概要:</strong> {{ content.overview }}</p>
+                        <p><strong>成果物:</strong> {{ content.deliverables }}</p>
+                    {% endif %}
+                {% endif %}
+
+                <!-- フィードバックの表示 -->
+                {% if portfolio.feedbacks %}
+                    <h5>フィードバック:</h5>
+                    <ul>
+                        {% for feedback in portfolio.feedbacks %}
+                            <li>{{ feedback.feedback }} - 先生ID: {{ feedback.teacher_id }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>フィードバックはまだありません。</p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>まだポートフォリオが投稿されていません。</p>
+{% endif %}
+
+<a href="{{ url_for('index') }}" class="btn btn-default">ホームに戻る</a>
+{% endblock %}

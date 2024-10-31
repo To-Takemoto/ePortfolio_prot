@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from enum import Enum
 import json
+from functools import wraps
 
 from models import User
 from db_client import DBHandler
@@ -22,17 +23,21 @@ db = DBHandler("example.db")
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_data = db.select("users", fields="id, username, password", conditions={"id": user_id}, limit=1)
+    user_data = db.select("users", fields="id, username, password, role", conditions={"id": user_id}, limit=1)
     if user_data:
-        user = User(user_data[0]["id"], user_data[0]["username"], user_data[0]["password"])
+        user = User(user_data[0]["id"], user_data[0]["username"], user_data[0]["password"], user_data[0]["role"])
         return user
     return None
 
 @app.route("/")
 @login_required
 def index():
-    # ログイン後はユーザーのマイページにリダイレクト
-    return redirect(url_for("mypage"))
+    # ユーザーの役割に応じてリダイレクト先を変更
+    if current_user.role == 'teacher':
+        return redirect(url_for("teacher_dashboard"))
+    else:
+        return redirect(url_for("mypage"))
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -41,15 +46,19 @@ def login():
         password = request.form["password"]
 
         # ユーザー認証 (パスワードはハッシュをチェック)
-        user_data = db.select("users", fields="id, username, password", conditions={"username": username}, limit=1)
+        user_data = db.select("users", fields="id, username, password, role", conditions={"username": username}, limit=1)
         if user_data and check_password_hash(user_data[0]["password"], password):
-            user = User(user_data[0]["id"], user_data[0]["username"], user_data[0]["password"])
+            user = User(user_data[0]["id"], user_data[0]["username"], user_data[0]["password"], user_data[0]["role"])
             login_user(user)
-            return redirect(url_for("mypage"))  # ログイン後にマイページにリダイレクト
+            # ユーザーの役割に応じてリダイレクト先を変更
+            if user.role == 'teacher':
+                return redirect(url_for("teacher_dashboard"))
+            else:
+                return redirect(url_for("mypage"))
         else:
             flash("Invalid username or password", "danger")
             return redirect(url_for("login"))
-
+        
     return render_template("login.html")
 
 @app.route("/logout")
@@ -71,6 +80,9 @@ def mypage():
             portfolio["type_label"] = portfolio_type.label
         except ValueError:
             portfolio["type_label"] = "未知の種類"
+        # このポートフォリオに対するフィードバックを取得
+        feedbacks = db.select("feedbacks", conditions={"portfolio_id": portfolio["id"]})
+        portfolio["feedbacks"] = feedbacks
     # マイページテンプレートに渡す
     return render_template("mypage.html", user=current_user, portfolios=portfolios)
 
@@ -81,6 +93,7 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+        role = request.form["role"]
 
         # ユーザーがすでに存在するか確認
         if db.data_exists("users", {"username": username}):
@@ -89,7 +102,7 @@ def register():
 
         # パスワードをハッシュ化して保存
         hashed_password = generate_password_hash(password)
-        db.insert_data("users", {"username": username, "password": hashed_password})
+        db.insert_data("users", {"username": username, "password": hashed_password, "role": role})
         flash("Registration successful! You can now log in.", "success")
         return redirect(url_for("login"))
 
@@ -169,6 +182,54 @@ def portfolio_create():
     # テンプレートに種類を渡す
     portfolio_types = list(PortfolioType)
     return render_template("portfolio_create.html", portfolio_types=portfolio_types)
+
+def teacher_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.role != 'teacher':
+            flash("Access denied.", "danger")
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route("/teacher_dashboard")
+@login_required
+@teacher_required
+def teacher_dashboard():
+    # 全ての生徒を取得
+    students = db.select("users", fields="id, username", conditions={"role": "student"})
+    student_portfolios = {}
+    for student in students:
+        portfolios = db.select("portfolios", fields="id, title, type, content", conditions={"user_id": student["id"]})
+        for portfolio in portfolios:
+            try:
+                portfolio_type = PortfolioType(portfolio["type"])
+                portfolio["type_label"] = portfolio_type.label
+            except ValueError:
+                portfolio["type_label"] = "未知の種類"
+        student_portfolios[student["id"]] = {"username": student["username"], "portfolios": portfolios}
+    return render_template("teacher_dashboard.html", student_portfolios=student_portfolios)
+
+# フィードバック送信エンドポイント
+@app.route("/send_feedback", methods=["POST"])
+@login_required
+@teacher_required
+def send_feedback():
+    student_id = request.form["student_id"]
+    portfolio_id = request.form["portfolio_id"]
+    feedback_text = request.form["feedback"]
+
+    data = {
+        "teacher_id": current_user.id,
+        "student_id": student_id,
+        "portfolio_id": portfolio_id,
+        "feedback": feedback_text
+    }
+
+    # フィードバックをデータベースに保存
+    db.insert_data("feedbacks", data)
+    flash("フィードバックを送信しました。", "success")
+    return redirect(url_for('teacher_dashboard'))
 
 # カスタムフィルターを追加
 @app.template_filter('from_json')
