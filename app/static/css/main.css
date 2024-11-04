@@ -1,0 +1,67 @@
+/* ナビゲーションバーの背景色とリンクの色 */
+.navbar {
+    background-color: #4CAF50; /* 好きな色に変更 */
+    border: none;
+}
+
+.navbar .navbar-brand, .navbar .nav > li > a {
+    color: white !important;
+}
+
+.navbar .nav > li > a:hover, .navbar .navbar-brand:hover {
+    color: #FFD700 !important;
+}
+
+/* フラッシュメッセージのデザイン */
+.alert {
+    margin-top: 15px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.alert-success {
+    background-color: #DFF0D8;
+    color: #3C763D;
+}
+
+.alert-danger {
+    background-color: #F2DEDE;
+    color: #A94442;
+}
+
+.alert-warning {
+    background-color: #FCF8E3;
+    color: #8A6D3B;
+}
+
+.alert-info {
+    background-color: #D9EDF7;
+    color: #31708F;
+}
+
+/* メインコンテンツのパディング */
+.container {
+    padding-top: 20px;
+}
+
+/* マイページリンクなどのボタンのカスタマイズ */
+.navbar-nav > li > a {
+    padding: 10px 15px;
+    font-size: 16px;
+}
+
+/* ヘッダーやコンテナ内のタイトル */
+h1, h2, h3, h4, h5, h6 {
+    color: #333;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* フッターのデザイン（もし追加する場合） */
+footer {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    margin-top: 20px;
+}
