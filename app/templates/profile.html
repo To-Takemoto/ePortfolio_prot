@@ -1,0 +1,27 @@
+<!-- templates/profile.html -->
+
+{% extends "base.html" %}
+
+{% block title %}プロフィール{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>プロフィール</h1>
+</div>
+
+<form action="{{ url_for('profile') }}" method="POST">
+    <div class="form-group">
+        <label for="full_name">名前</label>
+        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}" required>
+    </div>
+    <div class="form-group">
+        <label for="student_number">学籍番号</label>
+        <input type="text" class="form-control" id="student_number" name="student_number" value="{{ user.student_number }}" required>
+    </div>
+    <div class="form-group">
+        <label for="seminar">所属ゼミ</label>
+        <input type="text" class="form-control" id="seminar" name="seminar" value="{{ user.seminar }}">
+    </div>
+    <button type="submit" class="btn btn-primary">更新</button>
+</form>
+{% endblock %}
