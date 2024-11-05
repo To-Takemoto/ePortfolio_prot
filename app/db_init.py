@@ -23,17 +23,17 @@ def initialize_db():
             print("Added 'role' column to 'users' table.")
 
     # デフォルトのユーザーを挿入
-    default_users = [
-        {"username": "admin", "password": generate_password_hash("password"), "role": "teacher"},
-        {"username": "user", "password": generate_password_hash("password123"), "role": "student"}
-    ]
+    # default_users = [
+    #     {"username": "admin", "password": generate_password_hash("password"), "role": "teacher"},
+    #     {"username": "user", "password": generate_password_hash("password123"), "role": "student"}
+    # ]
 
-    for user in default_users:
-        if not db.data_exists("users", {"username": user["username"]}):
-            db.insert_data("users", user)
-            print(f"Inserted default user: {user['username']}")
-        else:
-            print(f"User {user['username']} already exists in the database.")
+    # for user in default_users:
+    #     if not db.data_exists("users", {"username": user["username"]}):
+    #         db.insert_data("users", user)
+    #         print(f"Inserted default user: {user['username']}")
+    #     else:
+    #         print(f"User {user['username']} already exists in the database.")
 
     # ポートフォリオテーブル
     if not db.table_exists("portfolios"):
