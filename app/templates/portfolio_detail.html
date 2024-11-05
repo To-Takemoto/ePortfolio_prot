@@ -1,0 +1,54 @@
+<!-- templates/portfolio_detail.html -->
+
+{% extends "base.html" %}
+
+{% block title %}{{ portfolio.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ portfolio.title }} ({{ portfolio.type_label }})</h1>
+</div>
+
+<!-- ポートフォリオの詳細表示 -->
+<div class="panel panel-default">
+    <div class="panel-body">
+        <!-- 種類に応じた表示 -->
+        {% if portfolio.type == 'skillset' %}
+            <p><strong>技術的なスキル:</strong> {{ portfolio.content.technical_skills }}</p>
+            <p><strong>ソフトスキル:</strong> {{ portfolio.content.soft_skills }}</p>
+            <p><strong>資格や認定:</strong> {{ portfolio.content.certifications }}</p>
+        {% elif portfolio.type == 'project' %}
+            <p><strong>プロジェクト名:</strong> {{ portfolio.content.project_name }}</p>
+            <p><strong>実施時期:</strong> {{ portfolio.content.duration }}</p>
+            <p><strong>概要:</strong> {{ portfolio.content.overview }}</p>
+            <p><strong>成果物:</strong> {{ portfolio.content.deliverables }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- コメント一覧 -->
+<h3>コメント</h3>
+<div class="comments">
+    {% if comments %}
+        {% for comment in comments %}
+            <div class="comment">
+                <p><strong>{{ comment.user_name }}:</strong> {{ comment.content }}</p>
+                <p class="text-muted"><small>{{ comment.timestamp }}</small></p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>コメントはまだありません。</p>
+    {% endif %}
+</div>
+
+<!-- コメント投稿フォーム -->
+<h4>コメントを投稿する</h4>
+<form action="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}" method="POST">
+    <div class="form-group">
+        <textarea class="form-control" name="content" rows="3" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">投稿</button>
+</form>
+
+<a href="{{ url_for('mypage') }}" class="btn btn-default">マイページに戻る</a>
+{% endblock %}
