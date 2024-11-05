@@ -19,7 +19,7 @@
     <ul class="list-group">
         {% for portfolio in portfolios %}
             <li class="list-group-item">
-                <h4>{{ portfolio.title }} ({{ portfolio.type_label }})</h4>
+                <h4><a href="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}">{{ portfolio.title }}</a> ({{ portfolio.type_label }})</h4>
                 {% if portfolio.content %}
                     {% set content = portfolio.content | from_json %}
                     <!-- 種類に応じて表示を変える -->
@@ -37,12 +37,12 @@
 
                 <!-- フィードバックの表示 -->
                 {% if portfolio.feedbacks %}
-                    <h5>フィードバック:</h5>
-                    <ul>
-                        {% for feedback in portfolio.feedbacks %}
-                            <li>{{ feedback.feedback }} - 先生ID: {{ feedback.teacher_id }}</li>
-                        {% endfor %}
-                    </ul>
+                <h5>フィードバック:</h5>
+                <ul>
+                    {% for feedback in portfolio.feedbacks %}
+                        <li>{{ feedback.feedback }} - 先生: {{ feedback.teacher_name }}</li>
+                    {% endfor %}
+                </ul>
                 {% else %}
                     <p>フィードバックはまだありません。</p>
                 {% endif %}
