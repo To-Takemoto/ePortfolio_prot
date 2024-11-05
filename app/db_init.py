@@ -74,5 +74,33 @@ def initialize_db():
     else:
         print("Table 'feedbacks' already exists.")
 
+    # コメントテーブルの作成
+    if not db.table_exists("comments"):
+        db.execute_query("""
+        CREATE TABLE comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            portfolio_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(portfolio_id) REFERENCES portfolios(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """)
+        print("Table 'comments' created successfully.")
+    else:
+        print("Table 'comments' already exists.")
+
+    columns = db.get_metadata("users", info_type="columns")
+    if 'full_name' not in columns:
+        db.execute_query("ALTER TABLE users ADD COLUMN full_name TEXT")
+        print("Added 'full_name' column to 'users' table.")
+    if 'student_number' not in columns:
+        db.execute_query("ALTER TABLE users ADD COLUMN student_number TEXT")
+        print("Added 'student_number' column to 'users' table.")
+    if 'seminar' not in columns:
+        db.execute_query("ALTER TABLE users ADD COLUMN seminar TEXT")
+        print("Added 'seminar' column to 'users' table.")
+
 if __name__ == "__main__":
     initialize_db()
