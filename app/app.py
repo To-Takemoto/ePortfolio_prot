@@ -87,7 +87,11 @@ def logout():
 @login_required
 def mypage():
     # 現在のユーザーのポートフォリオを取得
-    portfolios = db.select("portfolios", fields="id, title, type, content", conditions={"user_id": current_user.id})
+    portfolios = db.select(
+        "portfolios",
+        fields="id, title, type, content",
+        conditions={"user_id": current_user.id}
+    )
     for portfolio in portfolios:
         try:
             portfolio_type = PortfolioType(portfolio["type"])
@@ -100,6 +104,7 @@ def mypage():
             FROM feedbacks
             JOIN users ON feedbacks.teacher_id = users.id
             WHERE feedbacks.portfolio_id = ?
+            ORDER BY feedbacks.timestamp ASC
         """, (portfolio["id"],), fetch="all")
         portfolio["feedbacks"] = feedbacks
     # マイページテンプレートに渡す
@@ -138,20 +143,20 @@ def register():
     return render_template("register.html")
 
 # ポートフォリオ編集ページ
-@app.route("/portfolio/edit", methods=["GET", "POST"])
-@login_required
-def portfolio_edit():
-    if request.method == "POST":
-        portfolio_id = request.form["portfolio_id"]
-        new_title = request.form["title"]
-        new_description = request.form["description"]
+# @app.route("/portfolio/edit", methods=["GET", "POST"])
+# @login_required
+# def portfolio_edit():
+#     if request.method == "POST":
+#         portfolio_id = request.form["portfolio_id"]
+#         new_title = request.form["title"]
+#         new_description = request.form["description"]
 
-        # ポートフォリオの更新処理
-        db.update_data("portfolios", updates={"title": new_title, "description": new_description}, conditions={"id": portfolio_id, "user_id": current_user.id})
-        flash("ポートフォリオが更新されました", "success")
-        return redirect(url_for("mypage"))
+#         # ポートフォリオの更新処理
+#         db.update_data("portfolios", updates={"title": new_title, "description": new_description}, conditions={"id": portfolio_id, "user_id": current_user.id})
+#         flash("ポートフォリオが更新されました", "success")
+#         return redirect(url_for("mypage"))
 
-    return render_template("portfolio_edit.html")
+#     return render_template("portfolio_edit.html")
 
 
 # ポートフォリオの種類を定義
@@ -253,6 +258,7 @@ def send_feedback():
         "student_id": student_id,
         "portfolio_id": portfolio_id,
         "feedback": feedback_text
+        # 'timestamp' はデフォルト値が設定されているため不要
     }
 
     # フィードバックをデータベースに保存
@@ -265,7 +271,12 @@ def send_feedback():
 @login_required
 def portfolio_detail(portfolio_id):
     # ポートフォリオを取得
-    portfolios = db.select("portfolios", fields="id, user_id, title, type, content", conditions={"id": portfolio_id}, limit=1)
+    portfolios = db.select(
+        "portfolios",
+        fields="id, user_id, title, type, content",
+        conditions={"id": portfolio_id},
+        limit=1
+    )
     if not portfolios:
         abort(404)
     portfolio = portfolios[0]
@@ -285,7 +296,7 @@ def portfolio_detail(portfolio_id):
     # ポートフォリオの内容をJSONから辞書に変換
     portfolio["content"] = json.loads(portfolio["content"])
 
-    # コメントの取得
+    # コメントの取得（ユーザーのフルネームを取得）
     comments = db.execute_query("""
         SELECT comments.*, users.full_name AS user_name
         FROM comments
@@ -293,6 +304,18 @@ def portfolio_detail(portfolio_id):
         WHERE comments.portfolio_id = ?
         ORDER BY comments.timestamp ASC
     """, (portfolio_id,), fetch="all")
+
+    # 進捗情報の取得
+    progress_updates = db.select(
+        "progress_updates",
+        conditions={"portfolio_id": portfolio_id},
+        order_by="progress_number ASC"
+    )
+
+    # プログレス率の計算（例として総進捗ステップ数を10とする）
+    total_progress_steps = 10  # 必要に応じて調整
+    current_progress = progress_updates[-1]['progress_number'] if progress_updates else 0
+    progress_percentage = int((current_progress / total_progress_steps) * 100) if total_progress_steps > 0 else 0
 
     # コメントの投稿処理
     if request.method == "POST":
@@ -310,7 +333,14 @@ def portfolio_detail(portfolio_id):
             flash("コメントを投稿しました。", "success")
             return redirect(url_for("portfolio_detail", portfolio_id=portfolio_id))
 
-    return render_template("portfolio_detail.html", portfolio=portfolio, comments=comments)
+    return render_template(
+        "portfolio_detail.html",
+        portfolio=portfolio,
+        comments=comments,
+        progress_updates=progress_updates,
+        progress_percentage=progress_percentage,
+        total_progress_steps=total_progress_steps
+    )
 
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
@@ -340,13 +370,106 @@ def profile():
         return redirect(url_for("profile"))
 
     return render_template("profile.html", user=current_user)
+
+@app.route("/portfolio/<int:portfolio_id>/add_progress", methods=["POST"])
+@login_required
+def add_progress(portfolio_id):
+    # ポートフォリオの所有者か確認
+    portfolios = db.select("portfolios", fields="id, user_id", conditions={"id": portfolio_id}, limit=1)
+    if not portfolios:
+        abort(404)
+    portfolio = portfolios[0]
+    if portfolio['user_id'] != current_user.id:
+        flash("このポートフォリオに進捗を追加する権限がありません。", "danger")
+        return redirect(url_for('portfolio_detail', portfolio_id=portfolio_id))
+
+    # フォームから進捗内容を取得
+    content = request.form.get("content")
+    if not content.strip():
+        flash("進捗内容を入力してください。", "danger")
+        return redirect(url_for('portfolio_detail', portfolio_id=portfolio_id))
+
+    # 現在の最大進捗番号を取得
+    max_progress = db.execute_query(
+        "SELECT MAX(progress_number) AS max_number FROM progress_updates WHERE portfolio_id = ?",
+        (portfolio_id,),
+        fetch="one"
+    )
+    next_progress_number = (max_progress['max_number'] or 0) + 1
+
+    # 進捗データを挿入
+    db.insert_data("progress_updates", {
+        "portfolio_id": portfolio_id,
+        "progress_number": next_progress_number,
+        "content": content,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+    flash("進捗が追加されました。", "success")
+    return redirect(url_for('portfolio_detail', portfolio_id=portfolio_id))
+
+@app.route("/portfolio/<int:portfolio_id>/edit", methods=["GET", "POST"])
+@login_required
+def portfolio_edit(portfolio_id):
+    # ポートフォリオを取得
+    portfolios = db.select(
+        "portfolios",
+        fields="id, user_id, title, type, content",
+        conditions={"id": portfolio_id},
+        limit=1
+    )
+    if not portfolios:
+        abort(404)
+    portfolio = portfolios[0]
+
+    # 編集権限の確認：生徒は自分のポートフォリオのみ、先生は全てのポートフォリオを編集可能
+    if current_user.role == 'student' and portfolio['user_id'] != current_user.id:
+        flash("このポートフォリオを編集する権限がありません。", "danger")
+        return redirect(url_for('portfolio_detail', portfolio_id=portfolio_id))
+
+    if request.method == "POST":
+        title = request.form["title"]
+        portfolio_type = portfolio['type']
+        content = {}
+
+        if portfolio_type == 'skillset':
+            content["technical_skills"] = request.form.get("technical_skills", "")
+            content["soft_skills"] = request.form.get("soft_skills", "")
+            content["certifications"] = request.form.get("certifications", "")
+        elif portfolio_type == 'project':
+            content["project_name"] = request.form.get("project_name", "")
+            content["duration"] = request.form.get("duration", "")
+            content["overview"] = request.form.get("overview", "")
+            content["deliverables"] = request.form.get("deliverables", "")
+            content["feedback"] = request.form.get("feedback", "")
+        # 他の種類も同様に処理
+
+        # JSON形式で保存
+        content_json = json.dumps(content, ensure_ascii=False)
+
+        # ポートフォリオを更新
+        db.update_data(
+            "portfolios",
+            updates={"title": title, "content": content_json},
+            conditions={"id": portfolio_id, "user_id": portfolio['user_id']}
+        )
+
+        flash("ポートフォリオが更新されました。", "success")
+        return redirect(url_for('portfolio_detail', portfolio_id=portfolio_id))
+
+    # GETリクエスト時に既存の内容をフォームに表示
+    if portfolio["content"]:
+        portfolio_content = json.loads(portfolio["content"])
+    else:
+        portfolio_content = {}
+
+    return render_template("portfolio_edit.html", portfolio=portfolio, content=portfolio_content)
+
 # カスタムフィルターを追加
 @app.template_filter('from_json')
 def from_json_filter(s):
     return json.loads(s)
 
 if __name__ == "__main__":
-    if not db.table_exists("users"):
-        from db_init import initialize_db
-        initialize_db()
+    from db_init import initialize_db
+    initialize_db()
     app.run(debug=True, port=8080)
