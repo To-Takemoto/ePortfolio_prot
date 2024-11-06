@@ -11,31 +11,27 @@ def initialize_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            role TEXT NOT NULL
+            role TEXT NOT NULL,
+            full_name TEXT,
+            student_number TEXT,
+            seminar TEXT
         )
         """)
         print("Table 'users' created successfully.")
     else:
-        # 'role' カラムが存在しない場合は追加
+        # 'full_name', 'student_number', 'seminar' カラムが存在しない場合は追加
         columns = db.get_metadata("users", info_type="columns")
-        if 'role' not in columns:
-            db.execute_query("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'")
-            print("Added 'role' column to 'users' table.")
+        if 'full_name' not in columns:
+            db.execute_query("ALTER TABLE users ADD COLUMN full_name TEXT")
+            print("Added 'full_name' column to 'users' table.")
+        if 'student_number' not in columns:
+            db.execute_query("ALTER TABLE users ADD COLUMN student_number TEXT")
+            print("Added 'student_number' column to 'users' table.")
+        if 'seminar' not in columns:
+            db.execute_query("ALTER TABLE users ADD COLUMN seminar TEXT")
+            print("Added 'seminar' column to 'users' table.")
 
-    # デフォルトのユーザーを挿入
-    # default_users = [
-    #     {"username": "admin", "password": generate_password_hash("password"), "role": "teacher"},
-    #     {"username": "user", "password": generate_password_hash("password123"), "role": "student"}
-    # ]
-
-    # for user in default_users:
-    #     if not db.data_exists("users", {"username": user["username"]}):
-    #         db.insert_data("users", user)
-    #         print(f"Inserted default user: {user['username']}")
-    #     else:
-    #         print(f"User {user['username']} already exists in the database.")
-
-    # ポートフォリオテーブル
+    # ポートフォリオテーブルの作成または更新
     if not db.table_exists("portfolios"):
         db.execute_query("""
         CREATE TABLE portfolios (
@@ -53,10 +49,12 @@ def initialize_db():
         columns = db.get_metadata("portfolios", info_type="columns")
         if 'type' not in columns:
             db.execute_query("ALTER TABLE portfolios ADD COLUMN type TEXT NOT NULL DEFAULT ''")
+            print("Added 'type' column to 'portfolios' table.")
         if 'content' not in columns:
             db.execute_query("ALTER TABLE portfolios ADD COLUMN content TEXT NOT NULL DEFAULT ''")
+            print("Added 'content' column to 'portfolios' table.")
 
-    # フィードバックテーブルの作成
+    # フィードバックテーブルの作成または更新
     if not db.table_exists("feedbacks"):
         db.execute_query("""
         CREATE TABLE feedbacks (
@@ -65,6 +63,7 @@ def initialize_db():
             student_id INTEGER NOT NULL,
             portfolio_id INTEGER NOT NULL,
             feedback TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(teacher_id) REFERENCES users(id),
             FOREIGN KEY(student_id) REFERENCES users(id),
             FOREIGN KEY(portfolio_id) REFERENCES portfolios(id)
@@ -72,7 +71,13 @@ def initialize_db():
         """)
         print("Table 'feedbacks' created successfully.")
     else:
-        print("Table 'feedbacks' already exists.")
+        # 'timestamp' カラムが存在しない場合は追加
+        columns = db.get_metadata("feedbacks", info_type="columns")
+        if 'timestamp' not in columns:
+            db.execute_query("ALTER TABLE feedbacks ADD COLUMN timestamp DATETIME DEFAULT CURRENT_TIMESTAMP")
+            print("Added 'timestamp' column to 'feedbacks' table.")
+        else:
+            print("Table 'feedbacks' already exists with 'timestamp' column.")
 
     # コメントテーブルの作成
     if not db.table_exists("comments"):
@@ -91,16 +96,21 @@ def initialize_db():
     else:
         print("Table 'comments' already exists.")
 
-    columns = db.get_metadata("users", info_type="columns")
-    if 'full_name' not in columns:
-        db.execute_query("ALTER TABLE users ADD COLUMN full_name TEXT")
-        print("Added 'full_name' column to 'users' table.")
-    if 'student_number' not in columns:
-        db.execute_query("ALTER TABLE users ADD COLUMN student_number TEXT")
-        print("Added 'student_number' column to 'users' table.")
-    if 'seminar' not in columns:
-        db.execute_query("ALTER TABLE users ADD COLUMN seminar TEXT")
-        print("Added 'seminar' column to 'users' table.")
+    # 進捗テーブルの作成
+    if not db.table_exists("progress_updates"):
+        db.execute_query("""
+        CREATE TABLE progress_updates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            portfolio_id INTEGER NOT NULL,
+            progress_number INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(portfolio_id) REFERENCES portfolios(id)
+        )
+        """)
+        print("Table 'progress_updates' created successfully.")
+    else:
+        print("Table 'progress_updates' already exists.")
 
 if __name__ == "__main__":
     initialize_db()
