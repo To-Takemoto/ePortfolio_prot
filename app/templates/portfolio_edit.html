@@ -1,30 +1,56 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ポートフォリオ編集</title>
-    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-<div class="container">
-    <div class="page-header"><h1>ポートフォリオ編集</h1></div>
+{% extends "base.html" %}
 
-    <form action="{{ url_for('portfolio_edit') }}" method="POST">
-        <div class="form-group">
-            <label for="portfolio_id">ポートフォリオID</label>
-            <input type="text" class="form-control" id="portfolio_id" name="portfolio_id" required>
-        </div>
-        <div class="form-group">
-            <label for="title">新しいタイトル</label>
-            <input type="text" class="form-control" id="title" name="title" required>
-        </div>
-        <div class="form-group">
-            <label for="description">新しい説明</label>
-            <textarea class="form-control" id="description" name="description" required></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">編集</button>
-    </form>
+{% block title %}ポートフォリオ編集{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>ポートフォリオ編集: {{ portfolio.title }}</h1>
 </div>
-</body>
-</html>
+
+<form action="{{ url_for('portfolio_edit', portfolio_id=portfolio.id) }}" method="POST" id="portfolioEditForm">
+    <div class="form-group">
+        <label for="title">タイトル</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ portfolio.title }}" required>
+    </div>
+
+    {% if portfolio.type == 'skillset' %}
+        <div class="form-group">
+            <label for="technical_skills">技術的なスキル</label>
+            <input type="text" class="form-control" id="technical_skills" name="technical_skills" value="{{ content.technical_skills }}">
+        </div>
+        <div class="form-group">
+            <label for="soft_skills">ソフトスキル</label>
+            <input type="text" class="form-control" id="soft_skills" name="soft_skills" value="{{ content.soft_skills }}">
+        </div>
+        <div class="form-group">
+            <label for="certifications">資格や認定</label>
+            <input type="text" class="form-control" id="certifications" name="certifications" value="{{ content.certifications }}">
+        </div>
+    {% elif portfolio.type == 'project' %}
+        <div class="form-group">
+            <label for="project_name">プロジェクト名</label>
+            <input type="text" class="form-control" id="project_name" name="project_name" value="{{ content.project_name }}">
+        </div>
+        <div class="form-group">
+            <label for="duration">実施時期</label>
+            <input type="text" class="form-control" id="duration" name="duration" value="{{ content.duration }}">
+        </div>
+        <div class="form-group">
+            <label for="overview">プロジェクト概要</label>
+            <textarea class="form-control" id="overview" name="overview">{{ content.overview }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="deliverables">成果物の詳細</label>
+            <textarea class="form-control" id="deliverables" name="deliverables">{{ content.deliverables }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="feedback">評価やフィードバック</label>
+            <textarea class="form-control" id="feedback" name="feedback">{{ content.feedback }}</textarea>
+        </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary">編集</button>
+</form>
+
+<a href="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}" class="btn btn-default">ポートフォリオ詳細に戻る</a>
+{% endblock %}

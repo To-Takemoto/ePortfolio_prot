@@ -5,7 +5,9 @@
 {% block title %}先生用ダッシュボード{% endblock %}
 
 {% block content %}
-<div class="page-header"><h1>先生用ダッシュボード</h1></div>
+<div class="page-header">
+    <h1>先生用ダッシュボード</h1>
+</div>
 
 {% for student_id, student_info in student_portfolios.items() %}
     <h2>生徒: {{ student_info.full_name }}</h2>
@@ -13,7 +15,10 @@
         {% for portfolio in student_info.portfolios %}
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3><a href="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}">{{ portfolio.title }}</a> ({{ portfolio.type_label }})</h3>
+                    <h3>
+                        <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}">{{ portfolio.title }}</a>
+                        ({{ portfolio.type_label }})
+                    </h3>
                 </div>
                 <div class="panel-body">
                     <!-- ポートフォリオの内容を表示 -->
