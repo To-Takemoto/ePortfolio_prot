@@ -75,7 +75,7 @@ class DBHandler:
             last_row_id = cursor.lastrowid
             return last_row_id
 
-    def select(self, table_name: str, fields: str = "*", conditions: dict = None, limit: int = None) -> list:
+    def select(self, table_name: str, fields: str = "*", conditions: dict = None, limit: int = None, order_by: str = None) -> list:
         """
         指定された条件とフィールドでデータを取得する汎用的な SELECT メソッド。
         """
@@ -84,6 +84,8 @@ class DBHandler:
         if conditions:
             query += " WHERE " + " AND ".join([f"{col} = ?" for col in conditions.keys()])
             params = tuple(conditions.values())
+        if order_by:
+            query += f" ORDER BY {order_by}"
         if limit:
             query += f" LIMIT {limit}"
 
