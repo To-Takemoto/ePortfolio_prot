@@ -14,7 +14,7 @@
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="{{ url_for('index') }}">eポートフォリオサイト</a>
+                <a class="navbar-brand" href="{{ url_for('index') }}">ポートフォリオサイト</a>
             </div>
             <ul class="nav navbar-nav">
                 {% if current_user.is_authenticated %}
@@ -24,7 +24,7 @@
                         <li><a href="{{ url_for('mypage') }}">マイページ</a></li>
                         <!-- 生徒用のリンクを追加 -->
                         <li><a href="{{ url_for('portfolio_create') }}">ポートフォリオ作成</a></li>
-                        <li><a href="{{ url_for('portfolio_edit') }}">ポートフォリオ編集</a></li>
+                        <!-- ポートフォリオ編集は詳細ページからアクセス -->
                     {% endif %}
                     <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
                 {% else %}
@@ -35,9 +35,6 @@
             <ul class="nav navbar-nav navbar-right">
                 {% if current_user.is_authenticated %}
                     <li><a href="{{ url_for('profile') }}">{{ current_user.full_name }} さん</a></li>
-                    <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
-                {% else %}
-                    <!-- ログイン・新規登録のリンク -->
                 {% endif %}
             </ul>
         </div>
